@@ -19,6 +19,9 @@ from bubble_sheet_gui import BubbleSheetGui
 from qti_test_gui import QtiTestGui
 from pdf_to_png_gui import PdfToPngGui
 from scanner_gui import ScannerGui
+from grade_gui import GradeGui
+from analyze_misses_gui import AnalyzeMissesGui
+from adjust_grades_gui import AdjustGradesGui
 
 
 class BubblexanWindow(QMainWindow):
@@ -36,6 +39,9 @@ class BubblexanWindow(QMainWindow):
         tabs.addTab(QtiTestGui(self), "QTI Test Generator")
         tabs.addTab(PdfToPngGui(self), "PDF → PNG Converter")
         tabs.addTab(ScannerGui(self), "Bubble Sheet Scanner")
+        tabs.addTab(GradeGui(self), "Grading")
+        tabs.addTab(AnalyzeMissesGui(self), "Question Miss Analyzer")
+        tabs.addTab(AdjustGradesGui(self), "Grade Adjustment")
         self.setCentralWidget(tabs)
 
 
