@@ -1,0 +1,23 @@
+# Bytecode / cache
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Tooling
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.idea/
+.vscode/
+
+# Local artifacts
+*.pdf
+*_layout.json
+output/
+
+# Env files
+.env
