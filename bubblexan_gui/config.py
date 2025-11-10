@@ -13,6 +13,7 @@ _CLI_SCRIPTS = [
     "generate_bubblesheet.py",
     "generate_test_from_qti.py",
     "convert_pdf_to_png.py",
+    "scan_bubblesheet.py",
 ]
 _VENV_DIR = CLI_PATH / ".venv"
 _VENV_BIN = _VENV_DIR / ("Scripts" if sys.platform == "win32" else "bin")
