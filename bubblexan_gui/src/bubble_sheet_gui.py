@@ -143,8 +143,9 @@ class BubbleSheetGui(QWidget):
         main_layout.addStretch()
 
     def _choose_output_dir(self) -> None:
+        start_dir = self.output_dir_input.text().strip() or str(PROJECT_ROOT)
         selected = QFileDialog.getExistingDirectory(
-            self, "Select Output Folder", self.output_dir_input.text()
+            self, "Select Output Folder", start_dir
         )
         if selected:
             self.output_dir_input.setText(selected)

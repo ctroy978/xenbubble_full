@@ -202,7 +202,8 @@ class QtiTestGui(QWidget):
         return line_edit
 
     def _choose_directory(self, target: QLineEdit, caption: str) -> None:
-        selected = QFileDialog.getExistingDirectory(self, caption, target.text())
+        start_dir = target.text().strip() or str(PROJECT_ROOT)
+        selected = QFileDialog.getExistingDirectory(self, caption, start_dir)
         if selected:
             target.setText(selected)
 

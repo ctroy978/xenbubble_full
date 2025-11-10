@@ -17,6 +17,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTabWidget
 
 from bubble_sheet_gui import BubbleSheetGui
 from qti_test_gui import QtiTestGui
+from pdf_to_png_gui import PdfToPngGui
 
 
 class BubblexanWindow(QMainWindow):
@@ -32,6 +33,7 @@ class BubblexanWindow(QMainWindow):
         tabs = QTabWidget()
         tabs.addTab(BubbleSheetGui(self), "Bubble Sheet Generator")
         tabs.addTab(QtiTestGui(self), "QTI Test Generator")
+        tabs.addTab(PdfToPngGui(self), "PDF → PNG Converter")
         self.setCentralWidget(tabs)
 
 

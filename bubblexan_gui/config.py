@@ -12,6 +12,7 @@ CLI_PATH = (PROJECT_ROOT / "bubblexan_cli").resolve()
 _CLI_SCRIPTS = [
     "generate_bubblesheet.py",
     "generate_test_from_qti.py",
+    "convert_pdf_to_png.py",
 ]
 _VENV_DIR = CLI_PATH / ".venv"
 _VENV_BIN = _VENV_DIR / ("Scripts" if sys.platform == "win32" else "bin")
