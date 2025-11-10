@@ -27,7 +27,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from config import CLI_PATH, PROJECT_ROOT, PYTHON_EXECUTABLE
+from config import CLI_PATH, PROJECT_ROOT, PYTHON_EXECUTABLE, TEST_BUILD_PATH
 
 
 class _FormValues(TypedDict):
@@ -202,13 +202,14 @@ class QtiTestGui(QWidget):
         return line_edit
 
     def _choose_directory(self, target: QLineEdit, caption: str) -> None:
-        start_dir = target.text().strip() or str(PROJECT_ROOT)
+        start_dir = target.text().strip() or str(TEST_BUILD_PATH)
         selected = QFileDialog.getExistingDirectory(self, caption, start_dir)
         if selected:
             target.setText(selected)
 
     def _choose_file(self, target: QLineEdit, caption: str, filter_mask: str) -> None:
-        file_path, _ = QFileDialog.getOpenFileName(self, caption, target.text(), filter_mask)
+        start_dir = target.text().strip() or str(TEST_BUILD_PATH)
+        file_path, _ = QFileDialog.getOpenFileName(self, caption, start_dir, filter_mask)
         if file_path:
             target.setText(file_path)
 

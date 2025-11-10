@@ -26,7 +26,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from config import CLI_PATH, PROJECT_ROOT, PYTHON_EXECUTABLE
+from config import CLI_PATH, PROJECT_ROOT, PYTHON_EXECUTABLE, TEST_BUILD_PATH
 
 
 class AdjustGradesGui(QWidget):
@@ -154,7 +154,7 @@ class AdjustGradesGui(QWidget):
         button.setToolTip(tooltip)
 
         def _choose_path() -> None:
-            start_path = line_edit.text().strip() or str(PROJECT_ROOT)
+            start_path = line_edit.text().strip() or str(TEST_BUILD_PATH)
             if save_dialog:
                 selected, _ = QFileDialog.getSaveFileName(
                     self,
@@ -183,7 +183,7 @@ class AdjustGradesGui(QWidget):
         self._log_browse_button.setEnabled(enabled)
 
     def _choose_log_file(self) -> None:
-        start_path = self.log_path_input.text().strip() or str(PROJECT_ROOT)
+        start_path = self.log_path_input.text().strip() or str(TEST_BUILD_PATH)
         selected, _ = QFileDialog.getSaveFileName(
             self,
             "Select log file",

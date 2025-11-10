@@ -31,7 +31,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from config import CLI_PATH, PROJECT_ROOT, PYTHON_EXECUTABLE
+from config import CLI_PATH, PROJECT_ROOT, PYTHON_EXECUTABLE, TEST_BUILD_PATH
 
 
 class _FormValues(TypedDict):
@@ -225,7 +225,7 @@ class ScannerGui(QWidget):
         button.setToolTip(tooltip)
 
         def _on_click() -> None:
-            start_dir = line_edit.text().strip() or str(PROJECT_ROOT)
+            start_dir = line_edit.text().strip() or str(TEST_BUILD_PATH)
             if directory_only:
                 selected = QFileDialog.getExistingDirectory(
                     self, "Select folder", start_dir
@@ -265,7 +265,7 @@ class ScannerGui(QWidget):
         self._log_browse_button.setEnabled(checked)
 
     def _choose_log_file(self, button: QPushButton) -> None:
-        start_path = self.log_path_input.text().strip() or str(PROJECT_ROOT)
+        start_path = self.log_path_input.text().strip() or str(TEST_BUILD_PATH)
         selected, _ = QFileDialog.getSaveFileName(
             self,
             "Select log file",

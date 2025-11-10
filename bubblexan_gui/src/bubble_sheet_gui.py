@@ -30,7 +30,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from config import CLI_PATH, PROJECT_ROOT, PYTHON_EXECUTABLE
+from config import CLI_PATH, PROJECT_ROOT, PYTHON_EXECUTABLE, TEST_BUILD_PATH
 
 
 class _FormValues(TypedDict):
@@ -69,7 +69,7 @@ class BubbleSheetGui(QWidget):
         self.questions_input.setToolTip("Number of questions for the bubble sheet (1-50).")
         form_layout.addRow("Questions:", self.questions_input)
 
-        self.id_length_input = QLineEdit("6")
+        self.id_length_input = QLineEdit("7")
         self.id_length_input.setValidator(QIntValidator(4, 10, self))
         self.id_length_input.setToolTip("Digits in the student ID column (4-10).")
         form_layout.addRow("ID Length:", self.id_length_input)
@@ -143,7 +143,7 @@ class BubbleSheetGui(QWidget):
         main_layout.addStretch()
 
     def _choose_output_dir(self) -> None:
-        start_dir = self.output_dir_input.text().strip() or str(PROJECT_ROOT)
+        start_dir = self.output_dir_input.text().strip() or str(TEST_BUILD_PATH)
         selected = QFileDialog.getExistingDirectory(
             self, "Select Output Folder", start_dir
         )

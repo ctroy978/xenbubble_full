@@ -31,7 +31,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from config import CLI_PATH, PROJECT_ROOT, PYTHON_EXECUTABLE
+from config import CLI_PATH, PROJECT_ROOT, PYTHON_EXECUTABLE, TEST_BUILD_PATH
 
 
 class _FormValues(TypedDict):
@@ -199,7 +199,7 @@ class PdfToPngGui(QWidget):
         return line_edit
 
     def _choose_source(self) -> None:
-        start_path = self.source_input.text().strip() or str(PROJECT_ROOT)
+        start_path = self.source_input.text().strip() or str(TEST_BUILD_PATH)
         if self.folder_radio.isChecked():
             selected = QFileDialog.getExistingDirectory(
                 self, "Select folder with PDFs", start_path
@@ -222,7 +222,7 @@ class PdfToPngGui(QWidget):
             self.source_input.setText(selected)
 
     def _choose_directory(self, target: QLineEdit) -> None:
-        start_dir = target.text().strip() or str(PROJECT_ROOT)
+        start_dir = target.text().strip() or str(TEST_BUILD_PATH)
         selected = QFileDialog.getExistingDirectory(
             self, "Select output folder", start_dir
         )

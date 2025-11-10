@@ -25,7 +25,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from config import CLI_PATH, PROJECT_ROOT, PYTHON_EXECUTABLE
+from config import CLI_PATH, PROJECT_ROOT, PYTHON_EXECUTABLE, TEST_BUILD_PATH
 
 
 class GradeGui(QWidget):
@@ -136,7 +136,7 @@ class GradeGui(QWidget):
         button.setToolTip(tooltip)
 
         def _choose_file() -> None:
-            start_dir = line_edit.text().strip() or str(PROJECT_ROOT)
+            start_dir = line_edit.text().strip() or str(TEST_BUILD_PATH)
             selected, _ = QFileDialog.getOpenFileName(
                 self,
                 "Select file",
@@ -173,7 +173,7 @@ class GradeGui(QWidget):
         button.setToolTip(tooltip)
 
         def _choose_dir() -> None:
-            start_dir = line_edit.text().strip() or str(PROJECT_ROOT)
+            start_dir = line_edit.text().strip() or str(TEST_BUILD_PATH)
             selected = QFileDialog.getExistingDirectory(
                 self,
                 "Select folder",

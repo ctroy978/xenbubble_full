@@ -8,6 +8,7 @@ from pathlib import Path
 GUI_ROOT = Path(__file__).resolve().parent
 PROJECT_ROOT = GUI_ROOT.parent
 CLI_PATH = (PROJECT_ROOT / "bubblexan_cli").resolve()
+TEST_BUILD_PATH = (PROJECT_ROOT / "test_build").resolve()
 
 _CLI_SCRIPTS = [
     "generate_bubblesheet.py",
@@ -36,6 +37,13 @@ def _validate_paths() -> None:
             f"'{PYTHON_EXECUTABLE}'. Activate bubblexan_cli/.venv and install dependencies."
         )
 
+    try:
+        TEST_BUILD_PATH.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:  # noqa: PERF203
+        raise OSError(
+            f"Could not create or access test build directory '{TEST_BUILD_PATH}': {exc}"
+        ) from exc
+
 
 _validate_paths()
 
@@ -43,4 +51,5 @@ __all__ = [
     "CLI_PATH",
     "PYTHON_EXECUTABLE",
     "PROJECT_ROOT",
+    "TEST_BUILD_PATH",
 ]

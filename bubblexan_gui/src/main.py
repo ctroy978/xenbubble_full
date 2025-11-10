@@ -22,6 +22,7 @@ from scanner_gui import ScannerGui
 from grade_gui import GradeGui
 from analyze_misses_gui import AnalyzeMissesGui
 from adjust_grades_gui import AdjustGradesGui
+from test_manager_gui import TestManagerGui
 
 
 class BubblexanWindow(QMainWindow):
@@ -42,6 +43,7 @@ class BubblexanWindow(QMainWindow):
         tabs.addTab(GradeGui(self), "Grading")
         tabs.addTab(AnalyzeMissesGui(self), "Question Miss Analyzer")
         tabs.addTab(AdjustGradesGui(self), "Grade Adjustment")
+        tabs.addTab(TestManagerGui(self), "Test Manager")
         self.setCentralWidget(tabs)
 
 
