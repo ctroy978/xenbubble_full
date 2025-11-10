@@ -1,0 +1,45 @@
+"""Entry point for the Bubblexan GUI."""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+SRC_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = SRC_DIR.parent
+
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
+from PyQt6.QtWidgets import QApplication, QMainWindow, QTabWidget
+
+from bubble_sheet_gui import BubbleSheetGui
+
+
+class BubblexanWindow(QMainWindow):
+    """Main window hosting all tool tabs."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.setWindowTitle("Bubblexan")
+        self.resize(800, 600)
+        self._init_ui()
+
+    def _init_ui(self) -> None:
+        tabs = QTabWidget()
+        tabs.addTab(BubbleSheetGui(self), "Bubble Sheet Generator")
+        self.setCentralWidget(tabs)
+
+
+def main() -> None:
+    """Bootstraps the Qt application."""
+    app = QApplication(sys.argv)
+    window = BubblexanWindow()
+    window.show()
+    sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    main()

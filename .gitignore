@@ -6,6 +6,8 @@ __pycache__/
 .venv/
 venv/
 env/
+bubblexan_cli/.venv/
+bubblexan_gui/.venv/
 
 # Tooling
 .mypy_cache/
@@ -16,6 +18,11 @@ env/
 
 # Local artifacts
 *.pdf
+*.csv
+*.log
+*.png
+*.jpg
+*.zip
 *_layout.json
 output/
 
