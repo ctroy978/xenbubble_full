@@ -9,17 +9,22 @@ GUI_ROOT = Path(__file__).resolve().parent
 PROJECT_ROOT = GUI_ROOT.parent
 CLI_PATH = (PROJECT_ROOT / "bubblexan_cli").resolve()
 
-_CLI_SCRIPT = CLI_PATH / "generate_bubblesheet.py"
+_CLI_SCRIPTS = [
+    "generate_bubblesheet.py",
+    "generate_test_from_qti.py",
+]
 _VENV_DIR = CLI_PATH / ".venv"
 _VENV_BIN = _VENV_DIR / ("Scripts" if sys.platform == "win32" else "bin")
 PYTHON_EXECUTABLE = _VENV_BIN / ("python.exe" if sys.platform == "win32" else "python")
 
 
 def _validate_paths() -> None:
-    if not _CLI_SCRIPT.exists():
-        raise FileNotFoundError(
-            f"Expected CLI script at '{_CLI_SCRIPT}'. Make sure bubblexan_cli is set up."
-        )
+    for script in _CLI_SCRIPTS:
+        script_path = CLI_PATH / script
+        if not script_path.exists():
+            raise FileNotFoundError(
+                f"Expected CLI script at '{script_path}'. Make sure bubblexan_cli is set up."
+            )
 
     if not PYTHON_EXECUTABLE.exists():
         raise FileNotFoundError(

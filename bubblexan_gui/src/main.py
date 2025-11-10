@@ -16,6 +16,7 @@ if str(SRC_DIR) not in sys.path:
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTabWidget
 
 from bubble_sheet_gui import BubbleSheetGui
+from qti_test_gui import QtiTestGui
 
 
 class BubblexanWindow(QMainWindow):
@@ -30,6 +31,7 @@ class BubblexanWindow(QMainWindow):
     def _init_ui(self) -> None:
         tabs = QTabWidget()
         tabs.addTab(BubbleSheetGui(self), "Bubble Sheet Generator")
+        tabs.addTab(QtiTestGui(self), "QTI Test Generator")
         self.setCentralWidget(tabs)
 
 
