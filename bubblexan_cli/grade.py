@@ -148,8 +148,8 @@ def _score_row(row: pd.Series, answer_map: Dict[str, QuestionSpec]) -> Tuple[flo
     return score, explanation
 
 
-def grade_responses(responses_path: Path, answer_path: Path) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """Produce the graded results table and question stats table."""
+def grade_responses(responses_path: Path, answer_path: Path) -> Tuple[pd.DataFrame, pd.DataFrame, List[str]]:
+    """Produce graded results, question stats, and any processing warnings."""
     answer_map, total_points, question_order = load_answer_key(answer_path)
 
     try:
@@ -168,6 +168,20 @@ def grade_responses(responses_path: Path, answer_path: Path) -> Tuple[pd.DataFra
     responses_df["student_id"] = responses_df["student_id"].astype(str).str.strip()
     responses_df["question_id"] = responses_df["question_id"].astype(str).str.strip().str.upper()
     responses_df["selected_answers"] = responses_df["selected_answers"].fillna("")
+
+    warnings: List[str] = []
+    known_mask = responses_df["question_id"].isin(answer_map)
+    if not known_mask.all():
+        missing_questions = responses_df.loc[~known_mask, "question_id"]
+        counts = missing_questions.value_counts().to_dict()
+        for question_id, count in sorted(counts.items()):
+            warnings.append(
+                f"Question '{question_id}' present in responses {count} time(s) but missing from answer key; skipping."
+            )
+        responses_df = responses_df.loc[known_mask].copy()
+
+    if responses_df.empty:
+        raise GradingError("No valid responses remain after filtering unknown questions.")
 
     scores: List[float] = []
     explanations: List[str] = []
@@ -214,7 +228,7 @@ def grade_responses(responses_path: Path, answer_path: Path) -> Tuple[pd.DataFra
     graded_df = graded_df.sort_values(["student_id", "question_id"]).reset_index(drop=True)
     graded_df["percent_grade"] = graded_df["percent_grade"].round(2)
 
-    return graded_df, stats_df
+    return graded_df, stats_df, warnings
 
 
 def write_outputs(graded_df: pd.DataFrame, stats_df: pd.DataFrame, output_dir: Path) -> None:
@@ -238,8 +252,12 @@ def main() -> None:
     answer_path = Path(args.answer_key_csv)
     output_dir = Path(args.output_dir)
 
-    graded_df, stats_df = grade_responses(responses_path, answer_path)
+    graded_df, stats_df, warnings = grade_responses(responses_path, answer_path)
     write_outputs(graded_df, stats_df, output_dir)
+    if warnings:
+        print("\nWarnings:")
+        for msg in warnings:
+            print(f"- {msg}")
 
 
 if __name__ == "__main__":

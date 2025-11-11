@@ -554,16 +554,18 @@ def scan_image(
 
 
 def write_csv(output_path: Path, question_numbers: List[int], results: List[ScanResult]) -> None:
+    """Emit rows compatible with grade.py (student/question/answer per row)."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    headers = ["Student_ID"] + [f"Q{num}" for num in question_numbers]
+    headers = ["student_id", "question_id", "selected_answers"]
     with output_path.open("w", newline="", encoding="utf-8") as fp:
         writer = csv.writer(fp)
         writer.writerow(headers)
         for result in results:
-            row = [result.student_id]
+            student_id = str(result.student_id).strip()
             for q_num in question_numbers:
-                row.append(result.answers.get(q_num, ""))
-            writer.writerow(row)
+                question_id = f"Q{q_num}".upper()
+                selected = result.answers.get(q_num, "")
+                writer.writerow([student_id, question_id, selected])
 
 
 def write_log(log_path: Path, entries: List[str]) -> None:
