@@ -119,6 +119,25 @@ python grade.py \
 
 This writes `graded_report.csv` plus `graded_report.xlsx` (Grades + Question_Stats sheets) into the requested directory. Provide any CSV with columns `student_id,question_id,selected_answers`; multi-select selections should be comma-separated.
 
+## Give-Back Adjustments
+
+Clone the scanner results, mark specific questions correct for everyone, and re-run grading without touching the original CSV:
+
+```bash
+python give_back_questions.py \
+  --results results/results.csv \
+  --key tests/exam1_answer_key.csv \
+  --give-back Q1,Q3 \
+  --version adjustment_1 \
+  --output-dir adjustments \
+  [--log adjustments/adjustment_1.log]
+```
+
+- Writes `adjustments/adjustment_1_results.csv` with overridden `selected_answers` for the listed questions (using the answer key’s `Correct_Answer`).
+- Chains `grade.py` to emit `adjustments/adjustment_1_graded_report.csv` and `.xlsx`.
+- Never mutates the original results or any existing grade exports; pass a new `--version` for each adjustment.
+- Optional `--log` records a textual summary of the edits and saved file paths.
+
 ## Scoring Details
 
 - **Single-select questions**: a response earns the full point value only when every selected option matches the key exactly; otherwise it earns zero.
