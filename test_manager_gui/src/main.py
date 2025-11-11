@@ -21,6 +21,7 @@ if str(SRC_DIR) not in sys.path:
 import config
 from answer_key_gui import AnswerKeyGui
 from bubble_sheet_gui import BubbleSheetGui
+from pdf_to_png_gui import PdfToPngGui
 from qti_test_gui import QtiTestGui
 from test_manager_gui import TestManagerGui
 
@@ -75,6 +76,7 @@ class BubblexanWindow(QMainWindow):
         tabs.add_managed_tab(BubbleSheetGui(self), "Bubble Sheet Generator", requires_test=True)
         tabs.add_managed_tab(QtiTestGui(self), "QTI Test Generator", requires_test=True)
         tabs.add_managed_tab(AnswerKeyGui(self), "Answer Key Import", requires_test=True)
+        tabs.add_managed_tab(PdfToPngGui(self), "PDF to PNG Conversion", requires_test=True)
         self.setCentralWidget(tabs)
 
 

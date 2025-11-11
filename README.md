@@ -93,3 +93,62 @@ python main.py
 5. **Grade**, **analyze**, and **adjust** using the dedicated tabs.
 
 Keep each tab pointed at the right subfolder so new files stay grouped by test.
+
+## Manual Answer Key Import
+
+Instructors can manually create an answer key for custom tests (instead of using a Canvas QTI export) and import it via the **Answer Key Import** tab in the Bubblexan GUI. Create your CSV file anywhere on your computer (naming it `answer_key.csv` is fine—the app renames it automatically) and follow the format below. When imported, the file is stored as `<test_name>_answer_key.csv` inside the selected test folder (e.g., `exam1_answer_key.csv`).
+
+### Answer Key CSV Format
+
+- **File Type**: CSV (`.csv`).
+- **Headers**: `Question,Correct_Answer,Points` (case-sensitive, required).
+- **Columns**:
+  - `Question`: Unique question identifier (e.g., `Q1`, `Question_2`). Use alphanumeric characters, underscores, or hyphens.
+  - `Correct_Answer`: Correct answer(s) as a single letter (e.g., `a`) or comma-separated letters for multi-answer questions (e.g., `"b,c,d"`). Use lowercase letters `a`–`e`, with no spaces in multi-answer entries.
+  - `Points`: Positive number (e.g., `2.00`, `4.0`) representing the question’s point value.
+- **Constraints**:
+  - Headers must be present.
+  - No empty rows or missing values.
+  - Multi-answer entries must include commas only (e.g., `"a,c,e"`).
+
+**Example**
+
+```csv
+Question,Correct_Answer,Points
+Q1,"b,c,d",4.00
+Q2,a,2.00
+Q3,b,2.00
+```
+
+### Importing the Answer Key
+
+1. In the **Test Manager** tab, create or select a test (e.g., `exam1`).
+2. In the **Answer Key Import** tab:
+   - Click **Browse** to select your CSV file (e.g., `answer_key.csv` from your computer).
+   - Click **Show Instructions** to view formatting requirements.
+   - Click **Import Answer Key** to validate and save the file.
+3. The file is saved to `test_build/<test_name>_<timestamp>/tests/<test_name>_answer_key.csv` (e.g., `test_build/exam1_20251110_1743/tests/exam1_answer_key.csv`).
+4. Use the **Review Answer Key** button to verify the imported file.
+
+### Notes
+
+- The CSV is validated for correct headers, question IDs, answer formats, and point values.
+- Invalid files trigger an error message (e.g., “Missing header ‘Points’.”).
+- The imported answer key is compatible with the Grading App (`grade.py`) for scoring bubble sheets.
+
+## Scanning Bubble Sheets
+
+1. Use your scanner’s automatic document feeder to batch-scan student sheets into a single multi-page PDF (one page per student) at **300 DPI grayscale**.
+2. Save the PDF inside `test_build/<test_name>_<timestamp>/inputs/scans/` so it stays organized with the rest of the test assets.
+3. Open the **PDF to PNG Conversion** tab:
+   - Select the PDF, folder, or ZIP file.
+   - Keep the DPI at 300 unless you have a special requirement (100–600 supported).
+   - Click **Convert to Images** to produce `scanned_images/<prefix>_page01.png`, `<prefix>_page02.png`, etc.
+4. Confirm the PNGs with **Review Images**, then process them with the **Bubble Sheet Scanner** tab.
+
+### Conversion Tips
+
+- Ensure the entire border and alignment markers are visible on each scan.
+- Ask students to use #2 pencils and fully fill bubbles.
+- Avoid stapling, taping, or laminating sheets before scanning.
+- Large PDFs (hundreds of pages) may take several minutes to convert—keep the GUI open until completion.

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import csv
 import re
+import shutil
+import subprocess
 import sys
 import tempfile
 import zipfile
@@ -80,6 +82,7 @@ _MANIFEST_NAME = "imsmanifest.xml"
 _ANSWER_HEADERS = ["Question", "Correct_Answer", "Points"]
 _QUESTION_PATTERN = re.compile(r"^[A-Za-z0-9_-]+$")
 _ANSWER_PATTERN = re.compile(r"^[a-e]$")
+_PDF_EXTENSIONS = {".pdf"}
 
 
 def _find_case_insensitive(folder: Path, target_name: str) -> Path | None:
@@ -205,6 +208,52 @@ def validate_answer_key(csv_path: Path) -> list[str]:
     return errors
 
 
+def validate_pdf_input(source: Path) -> list[str]:
+    """Ensure the selected PDF/ZIP/folder contains at least one PDF."""
+
+    path = Path(source).expanduser()
+    if not path.exists():
+        return ["Selected path does not exist."]
+
+    if path.is_file():
+        suffix = path.suffix.lower()
+        if suffix == ".pdf":
+            return []
+        if suffix == ".zip":
+            with zipfile.ZipFile(path) as archive:
+                if any(
+                    not info.is_dir() and info.filename.lower().endswith(tuple(_PDF_EXTENSIONS))
+                    for info in archive.infolist()
+                ):
+                    return []
+            return ["ZIP archive does not contain any PDF files."]
+        return ["Selected file must be a .pdf or .zip archive."]
+
+    if path.is_dir():
+        if any(pdf.suffix.lower() in _PDF_EXTENSIONS for pdf in path.rglob("*.pdf")):
+            return []
+        return ["Folder does not contain any PDF files."]
+
+    return ["Selected path must be a file or folder."]
+
+
+def poppler_available() -> bool:
+    """Return True if pdftoppm (Poppler) is available on PATH."""
+
+    if shutil.which("pdftoppm"):
+        return True
+    try:
+        subprocess.run(
+            ["pdftoppm", "-h"],
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        return True
+    except FileNotFoundError:
+        return False
+
+
 __all__ = [
     "ACTIVE_TEST_NAME",
     "CLI_PATH",
@@ -217,6 +266,8 @@ __all__ = [
     "find_primary_qti_xml",
     "find_qti_support_files",
     "validate_answer_key",
+    "validate_pdf_input",
+    "poppler_available",
     "validate_cli_environment",
     "validate_qti_source",
 ]
