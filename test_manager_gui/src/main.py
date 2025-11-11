@@ -21,6 +21,7 @@ if str(SRC_DIR) not in sys.path:
 import config
 from answer_key_gui import AnswerKeyGui
 from bubble_sheet_gui import BubbleSheetGui
+from grade_adjustment_gui import GradeAdjustmentGui
 from grading_analysis_gui import GradingAnalysisGui
 from pdf_to_png_gui import PdfToPngGui
 from qti_test_gui import QtiTestGui
@@ -81,6 +82,7 @@ class BubblexanWindow(QMainWindow):
         tabs.add_managed_tab(PdfToPngGui(self), "PDF to PNG Conversion", requires_test=True)
         tabs.add_managed_tab(ScannerGui(self), "Bubble Sheet Scanner", requires_test=True)
         tabs.add_managed_tab(GradingAnalysisGui(self), "Grading & Analysis", requires_test=True)
+        tabs.add_managed_tab(GradeAdjustmentGui(self), "Grade Adjustment", requires_test=True)
         self.setCentralWidget(tabs)
 
 

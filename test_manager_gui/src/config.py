@@ -82,6 +82,7 @@ _MANIFEST_NAME = "imsmanifest.xml"
 _ANSWER_HEADERS = ["Question", "Correct_Answer", "Points"]
 _QUESTION_PATTERN = re.compile(r"^[A-Za-z0-9_-]+$")
 _ANSWER_PATTERN = re.compile(r"^[a-e]$")
+_VERSION_PATTERN = re.compile(r"^[A-Za-z0-9_-]+$")
 _PDF_EXTENSIONS = {".pdf"}
 _PNG_EXTENSIONS = {".png"}
 
@@ -311,6 +312,108 @@ def grade_inputs_active(active_folder: Path | None, exam_title: str | None) -> t
     return True, None, results_path, key_path
 
 
+def adjustment_inputs_active(
+    active_folder: Path | None,
+    exam_title: str | None,
+) -> tuple[bool, str | None, Path | None, Path | None, Path | None]:
+    """Ensure results, answer key, and (optionally) miss_report exist."""
+
+    ok, error, results_path, key_path = grade_inputs_active(active_folder, exam_title)
+    if not ok:
+        return False, error, None, None, None
+
+    miss_report_path: Path | None = None
+    if active_folder:
+        candidate = active_folder / "miss_analysis" / "miss_report.csv"
+        if candidate.exists():
+            miss_report_path = candidate
+    return True, None, results_path, key_path, miss_report_path
+
+
+def parse_miss_report(miss_report_path: Path | None) -> list[dict[str, str]]:
+    """Parse miss_report.csv rows."""
+
+    if not miss_report_path or not miss_report_path.exists():
+        return []
+    rows: list[dict[str, str]] = []
+    with miss_report_path.open("r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        if not reader.fieldnames:
+            return []
+        for line in reader:
+            if not line:
+                continue
+            question = (line.get("Question") or "").strip()
+            percent = (line.get("Percent_Missed") or "").strip()
+            missed = (line.get("Missed_Count") or "").strip()
+            total = (line.get("Total_Students") or "").strip()
+            if not question:
+                continue
+            rows.append(
+                {
+                    "Question": question.upper(),
+                    "Percent_Missed": percent,
+                    "Missed_Count": missed,
+                    "Total_Students": total,
+                }
+            )
+    return rows
+
+
+def list_adjustment_versions(active_folder: Path | None) -> list[str]:
+    """Return sorted list of adjustment version names."""
+
+    if not active_folder:
+        return []
+    adjustments_dir = active_folder / "adjustments"
+    if not adjustments_dir.exists():
+        return []
+    versions = set()
+    for csv_file in adjustments_dir.glob("*_results.csv"):
+        name = csv_file.stem
+        if name.endswith("_results"):
+            versions.add(name[: -len("_results")])
+    return sorted(versions)
+
+
+def next_adjustment_version(active_folder: Path | None) -> str:
+    """Suggest the next adjustment version name."""
+
+    existing = list_adjustment_versions(active_folder)
+    prefix = "adjustment"
+    if not existing:
+        return f"{prefix}_1"
+    max_index = 0
+    for version in existing:
+        if version.startswith(f"{prefix}_"):
+            try:
+                value = int(version.split("_")[-1])
+            except ValueError:
+                continue
+            max_index = max(max_index, value)
+    return f"{prefix}_{max_index + 1}"
+
+
+def normalize_question_id(raw: str) -> str:
+    """Normalize question IDs to uppercase 'Q' format."""
+
+    text = raw.strip()
+    if not text:
+        return ""
+    if not text.upper().startswith("Q"):
+        return f"Q{text.upper()}"
+    suffix = text[1:].strip()
+    return f"Q{suffix.upper()}" if suffix else "Q"
+
+
+def is_valid_version_label(value: str) -> bool:
+    """Validate adjustment version labels."""
+
+    if not value:
+        return False
+    return bool(_VERSION_PATTERN.fullmatch(value.strip()))
+
+
 __all__ = [
     "ACTIVE_TEST_NAME",
     "CLI_PATH",
@@ -326,7 +429,14 @@ __all__ = [
     "validate_pdf_input",
     "validate_scanner_inputs",
     "grade_inputs_active",
+    "adjustment_inputs_active",
     "layout_json_path",
+    "parse_miss_report",
+    "list_adjustment_versions",
+    "next_adjustment_version",
+    "normalize_question_id",
+    "is_valid_version_label",
+    "is_valid_version_label",
     "poppler_available",
     "validate_cli_environment",
     "validate_qti_source",
