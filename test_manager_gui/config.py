@@ -295,6 +295,22 @@ def validate_scanner_inputs(source: Path, layout_path: Path) -> tuple[bool, str 
     return False, "Selected path must be a file or folder."
 
 
+def grade_inputs_active(active_folder: Path | None, exam_title: str | None) -> tuple[bool, str | None, Path | None, Path | None]:
+    """Check for required inputs (results.csv, answer_key.csv) and return their paths."""
+
+    if not active_folder or not exam_title:
+        return False, "No test selected.", None, None
+
+    results_path = active_folder / "results" / "results.csv"
+    key_path = active_folder / "tests" / f"{exam_title}_answer_key.csv"
+
+    if not results_path.exists():
+        return False, f"Missing results CSV at {results_path}. Run the Bubble Sheet Scanner tab first.", None, None
+    if not key_path.exists():
+        return False, f"Missing answer key CSV at {key_path}. Generate or import an answer key first.", None, None
+    return True, None, results_path, key_path
+
+
 __all__ = [
     "ACTIVE_TEST_NAME",
     "CLI_PATH",
@@ -309,6 +325,7 @@ __all__ = [
     "validate_answer_key",
     "validate_pdf_input",
     "validate_scanner_inputs",
+    "grade_inputs_active",
     "layout_json_path",
     "poppler_available",
     "validate_cli_environment",
