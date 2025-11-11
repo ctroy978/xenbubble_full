@@ -1,6 +1,7 @@
 # Bytecode / cache
 __pycache__/
 *.py[cod]
+*.pyc
 
 # Virtual environments
 .venv/
@@ -8,6 +9,7 @@ venv/
 env/
 bubblexan_cli/.venv/
 bubblexan_gui/.venv/
+test_manager_gui/.venv/
 
 # Tooling
 .mypy_cache/
