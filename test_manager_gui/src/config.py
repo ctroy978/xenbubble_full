@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import csv
+import re
 import sys
 import tempfile
 import zipfile
@@ -75,6 +77,9 @@ validate_cli_environment()
 
 _META_NAME = "assessment_meta.xml"
 _MANIFEST_NAME = "imsmanifest.xml"
+_ANSWER_HEADERS = ["Question", "Correct_Answer", "Points"]
+_QUESTION_PATTERN = re.compile(r"^[A-Za-z0-9_-]+$")
+_ANSWER_PATTERN = re.compile(r"^[a-e]$")
 
 
 def _find_case_insensitive(folder: Path, target_name: str) -> Path | None:
@@ -139,6 +144,67 @@ def _validate_zip_contents(zip_path: Path) -> list[str]:
         return _validate_folder_contents(extracted_root)
 
 
+def validate_answer_key(csv_path: Path) -> list[str]:
+    """Validate the structure of a manually provided answer key CSV."""
+
+    path = Path(csv_path).expanduser()
+    errors: list[str] = []
+    if not path.exists():
+        return ["Selected CSV file does not exist."]
+    if path.suffix.lower() != ".csv":
+        return ["Selected file must have a .csv extension."]
+
+    try:
+        with path.open("r", encoding="utf-8-sig", newline="") as handle:
+            reader = csv.DictReader(handle)
+            headers = reader.fieldnames or []
+            missing_headers = [header for header in _ANSWER_HEADERS if header not in headers]
+            if missing_headers:
+                return [f"Missing header '{name}'." for name in missing_headers]
+
+            for row_number, row in enumerate(reader, start=2):
+                if not row:
+                    errors.append(f"Row {row_number} is empty.")
+                    continue
+
+                question = (row.get("Question") or "").strip()
+                answer = (row.get("Correct_Answer") or "").strip()
+                points_raw = (row.get("Points") or "").strip()
+
+                if not question:
+                    errors.append(f"Row {row_number}: Question cannot be empty.")
+                elif not _QUESTION_PATTERN.fullmatch(question):
+                    errors.append(
+                        f"Row {row_number}: Question '{question}' must use letters, numbers, underscores, or hyphens."
+                    )
+
+                if not answer:
+                    errors.append(f"Row {row_number}: Correct_Answer cannot be empty.")
+                else:
+                    segments = answer.split(",")
+                    for segment in segments:
+                        if not _ANSWER_PATTERN.fullmatch(segment):
+                            errors.append(
+                                f"Row {row_number}: Correct_Answer '{answer}' must use letters a-e with commas and no spaces."
+                            )
+                            break
+
+                if not points_raw:
+                    errors.append(f"Row {row_number}: Points cannot be empty.")
+                else:
+                    try:
+                        points_value = float(points_raw)
+                        if points_value <= 0:
+                            errors.append(f"Row {row_number}: Points must be greater than zero.")
+                    except ValueError:
+                        errors.append(f"Row {row_number}: Points '{points_raw}' is not a valid number.")
+
+    except csv.Error as exc:
+        errors.append(f"CSV parsing error: {exc}")
+
+    return errors
+
+
 __all__ = [
     "ACTIVE_TEST_NAME",
     "CLI_PATH",
@@ -150,6 +216,7 @@ __all__ = [
     "extract_exam_title",
     "find_primary_qti_xml",
     "find_qti_support_files",
+    "validate_answer_key",
     "validate_cli_environment",
     "validate_qti_source",
 ]

@@ -19,6 +19,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 import config
+from answer_key_gui import AnswerKeyGui
 from bubble_sheet_gui import BubbleSheetGui
 from qti_test_gui import QtiTestGui
 from test_manager_gui import TestManagerGui
@@ -71,8 +72,9 @@ class BubblexanWindow(QMainWindow):
     def _init_ui(self) -> None:
         tabs = BubblexanTabWidget()
         tabs.add_managed_tab(TestManagerGui(self), "Test Manager", requires_test=False)
-        tabs.add_managed_tab(QtiTestGui(self), "QTI Test Generator", requires_test=True)
         tabs.add_managed_tab(BubbleSheetGui(self), "Bubble Sheet Generator", requires_test=True)
+        tabs.add_managed_tab(QtiTestGui(self), "QTI Test Generator", requires_test=True)
+        tabs.add_managed_tab(AnswerKeyGui(self), "Answer Key Import", requires_test=True)
         self.setCentralWidget(tabs)
 
 
