@@ -83,6 +83,7 @@ _ANSWER_HEADERS = ["Question", "Correct_Answer", "Points"]
 _QUESTION_PATTERN = re.compile(r"^[A-Za-z0-9_-]+$")
 _ANSWER_PATTERN = re.compile(r"^[a-e]$")
 _PDF_EXTENSIONS = {".pdf"}
+_PNG_EXTENSIONS = {".png"}
 
 
 def _find_case_insensitive(folder: Path, target_name: str) -> Path | None:
@@ -254,6 +255,46 @@ def poppler_available() -> bool:
         return False
 
 
+def layout_json_path(active_folder: Path | None, exam_title: str | None) -> Path | None:
+    """Return the expected layout JSON path for the active test."""
+
+    if not active_folder or not exam_title:
+        return None
+    return active_folder / "bubble_sheets" / f"{exam_title}_layout.json"
+
+
+def validate_scanner_inputs(source: Path, layout_path: Path) -> tuple[bool, str | None]:
+    """Validate that scanner inputs exist and contain PNG files."""
+
+    if not layout_path.exists():
+        return False, f"Layout JSON not found: {layout_path}"
+
+    path = Path(source).expanduser()
+    if not path.exists():
+        return False, f"Selected path does not exist: {path}"
+
+    if path.is_file():
+        suffix = path.suffix.lower()
+        if suffix == ".zip":
+            with zipfile.ZipFile(path) as archive:
+                for info in archive.infolist():
+                    if info.is_dir():
+                        continue
+                    if info.filename.lower().endswith(".png"):
+                        return True, None
+            return False, "ZIP archive does not contain any PNG files."
+        if suffix in _PNG_EXTENSIONS:
+            return True, None
+        return False, "Selected file must be a .png image or .zip archive."
+
+    if path.is_dir():
+        if any(file.suffix.lower() in _PNG_EXTENSIONS for file in path.rglob("*.png")):
+            return True, None
+        return False, "Folder does not contain any PNG files."
+
+    return False, "Selected path must be a file or folder."
+
+
 __all__ = [
     "ACTIVE_TEST_NAME",
     "CLI_PATH",
@@ -267,6 +308,8 @@ __all__ = [
     "find_qti_support_files",
     "validate_answer_key",
     "validate_pdf_input",
+    "validate_scanner_inputs",
+    "layout_json_path",
     "poppler_available",
     "validate_cli_environment",
     "validate_qti_source",
