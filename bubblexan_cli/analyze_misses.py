@@ -12,7 +12,7 @@ from __future__ import annotations
 import argparse
 import csv
 import re
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
@@ -92,6 +92,57 @@ def build_column_lookup(fieldnames: Sequence[str]) -> Dict[str, str]:
     return {name.lower(): name for name in fieldnames}
 
 
+def normalize_question_label(raw: str) -> str:
+    text = raw.strip()
+    if not text:
+        return ""
+    if text.lower().startswith("q") and len(text) > 1:
+        suffix = text[1:].strip()
+    else:
+        suffix = text
+    suffix = suffix or text
+    return f"Q{suffix}"
+
+
+def convert_results_to_wide(
+    rows: List[Dict[str, str]],
+    fieldnames: Sequence[str],
+) -> Tuple[List[Dict[str, str]], List[str]]:
+    lookup = build_column_lookup(fieldnames)
+    question_col = lookup.get("question_id")
+    answer_col = lookup.get("selected_answers")
+    student_col = lookup.get("student_id")
+
+    if not question_col or not answer_col:
+        return rows, list(fieldnames)
+
+    students: "OrderedDict[str, Dict[str, str]]" = OrderedDict()
+    question_order: List[str] = []
+    seen_questions: Set[str] = set()
+
+    for idx, row in enumerate(rows, start=1):
+        student_id = (row.get(student_col, "").strip() if student_col else "").strip()
+        if not student_id:
+            student_id = f"row_{idx}"
+        container = students.setdefault(student_id, {"Student_ID": student_id})
+
+        question_raw = row.get(question_col, "").strip()
+        if not question_raw:
+            continue
+        label = normalize_question_label(question_raw)
+        if not label:
+            continue
+        if label not in seen_questions:
+            seen_questions.add(label)
+            question_order.append(label)
+
+        container[label] = row.get(answer_col, "").strip()
+
+    wide_rows = list(students.values())
+    wide_fields = ["Student_ID"] + question_order
+    return wide_rows, wide_fields if question_order else list(fieldnames)
+
+
 def resolve_question_column(label: str, column_lookup: Dict[str, str]) -> Tuple[str, str]:
     raw = label.strip()
     if not raw:
@@ -129,15 +180,24 @@ def tokenize_options(value: str) -> List[str]:
     return parts
 
 
+def _get_field(row: Dict[str, str], *candidates: str) -> str:
+    lowered = {key.lower(): value for key, value in row.items()}
+    for candidate in candidates:
+        value = lowered.get(candidate.lower())
+        if value is not None:
+            return value
+    return ""
+
+
 def load_answer_key(key_path: Path, column_lookup: Dict[str, str]) -> List[AnswerSpec]:
     rows, _ = read_csv_rows(key_path)
     specs: List[AnswerSpec] = []
     seen_questions: Set[str] = set()
     for row in rows:
-        question_label = row.get("Question", "").strip()
-        answer_value = row.get("Answer", "").strip()
+        question_label = _get_field(row, "Question").strip()
+        answer_value = _get_field(row, "Correct_Answer", "Correct Answer", "Answer").strip()
         if not question_label or not answer_value:
-            raise ValueError("Each answer-key row must include Question and Answer values.")
+            raise ValueError("Each answer-key row must include Question and Correct_Answer values.")
         display_label, column_name = resolve_question_column(question_label, column_lookup)
         if display_label in seen_questions:
             raise ValueError(f"Duplicate question '{display_label}' in answer key.")
@@ -258,6 +318,7 @@ def main() -> None:
     key_path = Path(args.key)
     output_path = Path(args.output)
     rows, fieldnames = read_csv_rows(results_path)
+    rows, fieldnames = convert_results_to_wide(rows, fieldnames)
     if not any((name or "").strip().lower() == "student_id" for name in fieldnames):
         raise ValueError("Results CSV must include a 'Student_ID' column.")
 

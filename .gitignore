@@ -19,12 +19,14 @@ bubblexan_gui/.venv/
 # Local artifacts
 *.pdf
 *.csv
+*.xlsx
 *.log
 *.png
 *.jpg
 *.zip
 *_layout.json
 output/
+test_build/
 
 # Env files
 .env
