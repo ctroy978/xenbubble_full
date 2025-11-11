@@ -11,7 +11,7 @@ from typing import TypedDict
 
 import config
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QFont, QShowEvent
 from PyQt6.QtWidgets import (
     QComboBox,
     QFileDialog,
@@ -54,6 +54,7 @@ class QtiTestGui(QWidget):
         self._last_pdf: Path | None = None
         self._last_csv: Path | None = None
         self._init_ui()
+        self._refresh_existing_outputs()
 
     def _init_ui(self) -> None:
         main_layout = QVBoxLayout(self)
@@ -135,14 +136,14 @@ class QtiTestGui(QWidget):
         self.review_test_button.setFixedWidth(160)
         self.review_test_button.setEnabled(False)
         self.review_test_button.setToolTip("Open the generated PDF in your default viewer.")
-        self.review_test_button.clicked.connect(lambda: self._open_file(self._last_pdf, "test PDF"))
+        self.review_test_button.clicked.connect(self._review_test)
         buttons_layout.addWidget(self.review_test_button)
 
         self.review_key_button = QPushButton("Review Answer Key")
         self.review_key_button.setFixedWidth(160)
         self.review_key_button.setEnabled(False)
         self.review_key_button.setToolTip("Open the generated answer key CSV.")
-        self.review_key_button.clicked.connect(lambda: self._open_file(self._last_csv, "answer key"))
+        self.review_key_button.clicked.connect(self._review_answer_key)
         buttons_layout.addWidget(self.review_key_button)
 
         content_layout.addWidget(buttons_row, alignment=Qt.AlignmentFlag.AlignLeft)
@@ -426,3 +427,47 @@ class QtiTestGui(QWidget):
             str(params["csv_path"]),
         ]
         return "\n".join(lines)
+
+    def showEvent(self, event: QShowEvent) -> None:
+        super().showEvent(event)
+        self._refresh_existing_outputs()
+
+    def _refresh_existing_outputs(self) -> None:
+        active_folder = config.active_test_folder()
+        title = config.extract_exam_title()
+        if not active_folder or not title:
+            self._last_pdf = None
+            self._last_csv = None
+            self.review_test_button.setEnabled(False)
+            self.review_key_button.setEnabled(False)
+            return
+
+        tests_dir = active_folder / "tests"
+        prefix = self.prefix_input.text().strip() or title
+        if not self.prefix_input.text().strip():
+            self.prefix_input.setText(prefix)
+
+        pdf_candidate = tests_dir / f"{prefix}_test.pdf"
+        csv_candidate = tests_dir / f"{prefix}_answer_key.csv"
+
+        if pdf_candidate.exists():
+            self._last_pdf = pdf_candidate
+            self.review_test_button.setEnabled(True)
+        else:
+            self._last_pdf = None
+            self.review_test_button.setEnabled(False)
+
+        if csv_candidate.exists():
+            self._last_csv = csv_candidate
+            self.review_key_button.setEnabled(True)
+        else:
+            self._last_csv = None
+            self.review_key_button.setEnabled(False)
+
+    def _review_test(self) -> None:
+        self._refresh_existing_outputs()
+        self._open_file(self._last_pdf, "test PDF")
+
+    def _review_answer_key(self) -> None:
+        self._refresh_existing_outputs()
+        self._open_file(self._last_csv, "answer key")

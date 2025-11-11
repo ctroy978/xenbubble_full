@@ -10,7 +10,7 @@ from typing import TypedDict
 
 import config
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QIntValidator, QFont
+from PyQt6.QtGui import QIntValidator, QFont, QShowEvent
 from PyQt6.QtWidgets import (
     QComboBox,
     QFormLayout,
@@ -44,6 +44,7 @@ class BubbleSheetGui(QWidget):
         self._script_path = config.CLI_PATH / "generate_bubblesheet.py"
         self._last_pdf_path: Path | None = None
         self._init_ui()
+        self._refresh_existing_output()
 
     def _init_ui(self) -> None:
         main_layout = QVBoxLayout(self)
@@ -130,6 +131,7 @@ class BubbleSheetGui(QWidget):
         main_layout.addStretch()
 
     def _review_pdf(self) -> None:
+        self._refresh_existing_output()
         if not self._last_pdf_path or not self._last_pdf_path.exists():
             QMessageBox.information(
                 self,
@@ -278,3 +280,27 @@ class BubbleSheetGui(QWidget):
             str(params["json_path"]),
         ]
         return "\n".join(lines)
+
+    def showEvent(self, event: QShowEvent) -> None:
+        super().showEvent(event)
+        self._refresh_existing_output()
+
+    def _refresh_existing_output(self) -> None:
+        """Check if a bubble sheet already exists for the selected test."""
+
+        active_name = config.ACTIVE_TEST_NAME
+        active_folder = config.active_test_folder()
+        title = config.extract_exam_title()
+
+        if not active_folder or not title:
+            self._last_pdf_path = None
+            self.review_button.setEnabled(False)
+            return
+
+        candidate = active_folder / "bubble_sheets" / f"{title}.pdf"
+        if candidate.exists():
+            self._last_pdf_path = candidate
+            self.review_button.setEnabled(True)
+        else:
+            self._last_pdf_path = None
+            self.review_button.setEnabled(False)
