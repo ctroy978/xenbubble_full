@@ -26,6 +26,7 @@ from PyQt6.QtWidgets import (
     QComboBox,
     QSizePolicy,
     QMenu,
+    QFileDialog,
 )
 
 _ADJUSTMENT_TIPS = """The Grade Adjustment tab lets you "give back" selected questions so every student receives full credit for them, without touching the original results.
@@ -182,6 +183,10 @@ class GradeAdjustmentGui(QWidget):
         self.view_final_button.setMenu(self.final_menu)
         review_layout.addWidget(self.view_final_button)
 
+        self.export_canvas_button = QPushButton("Export Canvas Grades")
+        self.export_canvas_button.clicked.connect(self._export_canvas_grades)
+        review_layout.addWidget(self.export_canvas_button)
+
         main_layout.addWidget(review_row, alignment=Qt.AlignmentFlag.AlignLeft)
 
         tips_row = QWidget()
@@ -212,7 +217,7 @@ class GradeAdjustmentGui(QWidget):
         main_layout.addWidget(self.output_view)
 
         self._update_review_buttons()
-        self._update_final_grade_button()
+        self._update_final_grade_controls()
 
     def _evaluate_inputs(self, show_message: bool) -> bool:
         active_folder = config.active_test_folder()
@@ -226,6 +231,7 @@ class GradeAdjustmentGui(QWidget):
             self.save_button.setEnabled(False)
             self.finalize_button.setEnabled(False)
             self.view_final_button.setEnabled(False)
+            self.export_canvas_button.setEnabled(False)
             self._inputs_valid = False
             if show_message:
                 self.output_view.setPlainText(error or "Missing inputs. Complete earlier steps first.")
@@ -242,7 +248,7 @@ class GradeAdjustmentGui(QWidget):
         self._inputs_valid = True
         self._load_miss_report()
         self._update_version_placeholder()
-        self._update_final_grade_button()
+        self._update_final_grade_controls()
         return True
 
     def _load_miss_report(self) -> None:
@@ -443,7 +449,7 @@ class GradeAdjustmentGui(QWidget):
             self.version_combo.setCurrentIndex(index)
         self.version_combo.blockSignals(False)
         self._update_review_buttons()
-        self._update_final_grade_button()
+        self._update_final_grade_controls()
         self._update_version_placeholder()
 
     def _update_version_placeholder(self) -> None:
@@ -539,10 +545,108 @@ class GradeAdjustmentGui(QWidget):
             return
         self._open_path(target, f"final grades ({ext.upper()})")
 
-    def _update_final_grade_button(self) -> None:
+    def _export_canvas_grades(self) -> None:
+        active_folder = config.active_test_folder()
+        if not active_folder:
+            QMessageBox.information(self, "No active test", "Select or create a test folder first.")
+            return
+        grades_dir = active_folder / "grades"
+        graded_report = grades_dir / "graded_report.csv"
+        if not graded_report.exists():
+            QMessageBox.information(
+                self,
+                "Final grades missing",
+                f"{graded_report.name} not found. Finalize grades before exporting.",
+            )
+            return
+        try:
+            totals = self._collect_canvas_totals(graded_report)
+        except (OSError, ValueError, csv.Error) as exc:  # noqa: PERF203
+            QMessageBox.critical(self, "Export failed", f"Could not read final grades: {exc}")
+            return
+        if not totals:
+            QMessageBox.information(self, "No data", "Final grades file is empty. Nothing to export.")
+            return
+        exam_name = self._canvas_exam_name()
+        default_path = Path.home() / self._canvas_export_filename(exam_name)
+        selected_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save Canvas Export",
+            str(default_path),
+            "CSV Files (*.csv)",
+        )
+        if not selected_path:
+            return
+        export_path = Path(selected_path)
+        try:
+            with export_path.open("w", newline="", encoding="utf-8") as fp:
+                writer = csv.writer(fp)
+                writer.writerow(["Student ID", exam_name])
+                for student_id, score in sorted(totals.items()):
+                    writer.writerow([student_id, score])
+        except OSError as exc:  # noqa: PERF203
+            QMessageBox.critical(self, "Export failed", f"Could not write Canvas CSV: {exc}")
+            return
+        self.output_view.append(f"Canvas export saved to {export_path}.\n")
+        QMessageBox.information(
+            self,
+            "Canvas export created",
+            f"Saved Canvas-compatible CSV to:\n{export_path}",
+        )
+
+    def _collect_canvas_totals(self, graded_report: Path) -> dict[str, str]:
+        totals: dict[str, str] = {}
+        with graded_report.open("r", newline="", encoding="utf-8") as fp:
+            reader = csv.DictReader(fp)
+            headers = [name.strip() for name in (reader.fieldnames or []) if name]
+            expected = {"student_id", "total_score"}
+            missing = expected - set(headers)
+            if missing:
+                raise ValueError(f"{graded_report.name} missing columns: {', '.join(sorted(missing))}")
+            for row in reader:
+                student_id = (row.get("student_id") or "").strip()
+                if not student_id:
+                    continue
+                total_raw = (row.get("total_score") or "").strip()
+                if not total_raw:
+                    totals.setdefault(student_id, "")
+                    continue
+                try:
+                    total_value = float(total_raw)
+                except ValueError as exc:
+                    raise ValueError(f"Invalid total score '{total_raw}' for student {student_id}.") from exc
+                totals[student_id] = self._format_canvas_score(total_value)
+        return totals
+
+    def _format_canvas_score(self, value: float) -> str:
+        if value.is_integer():
+            return str(int(value))
+        text = f"{value:.2f}".rstrip("0").rstrip(".")
+        return text or "0"
+
+    def _canvas_exam_name(self) -> str:
+        active_name = config.ACTIVE_TEST_NAME or ""
+        extracted = config.extract_exam_title(active_name) if active_name else config.extract_exam_title()
+        base = (extracted or active_name or "Exam").strip()
+        if not base:
+            base = "Exam"
+        reserved = {"Current Score", "Current Grade", "Final Score", "Final Grade"}
+        if base in reserved:
+            base = f"{base} Export"
+        return base
+
+    def _canvas_export_filename(self, exam_name: str) -> str:
+        safe = "".join(ch if ch.isalnum() else "_" for ch in exam_name)
+        safe = "_".join(filter(None, safe.split("_")))
+        if not safe:
+            safe = "canvas_export"
+        return f"{safe.lower()}_canvas_export.csv"
+
+    def _update_final_grade_controls(self) -> None:
         active_folder = config.active_test_folder()
         if not active_folder:
             self.view_final_button.setEnabled(False)
+            self.export_canvas_button.setEnabled(False)
             return
         grades_dir = active_folder / "grades"
         has_csv = (grades_dir / "graded_report.csv").exists()
@@ -550,6 +654,7 @@ class GradeAdjustmentGui(QWidget):
         self.view_final_button.setEnabled(has_csv or has_xlsx)
         self.final_csv_action.setEnabled(has_csv)
         self.final_xlsx_action.setEnabled(has_xlsx)
+        self.export_canvas_button.setEnabled(has_csv)
 
     def showEvent(self, event: QShowEvent) -> None:
         super().showEvent(event)
