@@ -127,6 +127,9 @@ def generate_layout(
     )
 
     question_area_top = id_bottom_center_y - settings.bubble_radius - settings.section_gap
+    student_name_area = build_student_name_area(
+        student_id_layout, safe_left, student_id_label_y, orientation, settings
+    )
 
     question_layout, question_layout_meta = build_question_layout(
         questions=questions,
@@ -163,6 +166,7 @@ def generate_layout(
             "margin": settings.margin,
             "question_area_top": question_area_top,
             "student_id_label_y": student_id_label_y,
+            "student_name_area": student_name_area,
         },
     }
 
@@ -178,6 +182,66 @@ def build_student_id_layout(
     if orientation == "horizontal":
         return build_student_id_layout_horizontal(id_length, area_left, usable_width, top_center_y, settings)
     return build_student_id_layout_vertical(id_length, area_left, usable_width, top_center_y, settings)
+
+
+def build_student_name_area(
+    student_id_columns: List[Dict[str, object]],
+    safe_left: float,
+    student_id_label_y: float,
+    orientation: str,
+    settings: LayoutSettings,
+) -> Optional[Dict[str, object]]:
+    if not student_id_columns:
+        return None
+
+    def column_left_edge(column: Dict[str, object]) -> float:
+        bubble = min(column["bubbles"], key=lambda entry: entry["x"])
+        radius = bubble.get("radius", settings.bubble_radius)
+        return bubble["x"] - radius
+
+    left_edge = min(column_left_edge(column) for column in student_id_columns)
+    gap_width = left_edge - safe_left
+    minimum_gap = mm_to_points(10.0)
+    if gap_width <= minimum_gap:
+        return None
+
+    # Reserve a bit of padding from both sides to keep clear of the margin and bubbles.
+    horizontal_padding = mm_to_points(2.0)
+    min_x = safe_left + horizontal_padding
+    max_x = left_edge - horizontal_padding
+    if max_x <= min_x:
+        return None
+    line_x = (min_x + max_x) / 2.0
+
+    bubbles = [bubble for column in student_id_columns for bubble in column.get("bubbles", [])]
+    if not bubbles:
+        return None
+
+    def bubble_extent(bubble: Dict[str, float], direction: int) -> float:
+        radius = bubble.get("radius", settings.bubble_radius)
+        return bubble["y"] + radius * direction
+
+    line_top = max(bubble_extent(bubble, 1) for bubble in bubbles)
+    line_bottom = min(bubble_extent(bubble, -1) for bubble in bubbles)
+
+    # Avoid overlapping with the "Student ID" header by trimming the top slightly.
+    header_clearance = mm_to_points(3.0)
+    line_top = min(line_top, student_id_label_y - header_clearance)
+
+    label_y = (line_top + line_bottom) / 2.0
+
+    label_offset = mm_to_points(3.0)
+    line_data = {
+        "line_start": {"x": line_x, "y": line_top},
+        "line_end": {"x": line_x, "y": line_bottom},
+        "label": {
+            "x": line_x + label_offset,
+            "y": label_y,
+            "text": "Student Name",
+            "angle": 90,
+        },
+    }
+    return line_data
 
 
 def build_student_id_layout_vertical(
@@ -406,6 +470,24 @@ def render_pdf(layout: Dict[str, object], pdf_path: Path, draw_border: bool = Tr
     if student_id_columns:
         student_label_x = min(col["label_position"]["x"] for col in student_id_columns)
     c.drawString(student_label_x, metadata["student_id_label_y"], "Student ID")
+
+    student_name_area = metadata.get("student_name_area")
+    if student_name_area:
+        c.setStrokeColor(colors.black)
+        line_start = student_name_area["line_start"]
+        line_end = student_name_area["line_end"]
+        c.line(line_start["x"], line_start["y"], line_end["x"], line_end["y"])
+        label = student_name_area["label"]
+        c.saveState()
+        c.setFont("Helvetica", 9)
+        angle = label.get("angle", 0)
+        if angle:
+            c.translate(label["x"], label["y"])
+            c.rotate(angle)
+            c.drawCentredString(0, 0, label["text"])
+        else:
+            c.drawCentredString(label["x"], label["y"], label["text"])
+        c.restoreState()
 
     c.setFont("Helvetica", 10)
 
